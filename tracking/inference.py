@@ -339,7 +339,8 @@ class ParticleFilter(InferenceModule):
         """
         new_particles = []
         for old_pos in self.particles:
-            new_particles.append(util.sample(self.getPositionDistribution(self.setGhostPosition(gameState, old_pos))))
+            dist = self.getPositionDistribution(self.setGhostPosition(gameState, old_pos))
+            new_particles.append(util.sample(dist))
         self.particles = new_particles
 
 
