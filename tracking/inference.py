@@ -341,19 +341,6 @@ class ParticleFilter(InferenceModule):
         for old_pos in self.particles:
             new_particles.append(util.sample(self.getPositionDistribution(self.setGhostPosition(gameState, old_pos))))
         self.particles = new_particles
-        return 
-
-        # old implementation
-        allPossible = util.Counter()
-
-        for p in self.legalPositions:
-            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p))
-            for newPos, prob in newPosDist.items():
-                allPossible[newPos] += prob*self.particles.count(p)
-
-        allPossible.normalize()
-        for i in range(0,self.numParticles):
-                self.particles.append(util.sample(allPossible))
 
 
 
