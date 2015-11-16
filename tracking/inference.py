@@ -520,7 +520,7 @@ class JointParticleFilter:
         self.particles = []
         # All the particles disappeared!
         if beliefs.totalCount() == 0:
-            self.initializeParticles(gameState)
+            self.initializeParticles()
             # Put all jailed ghosts in jail
             self.particles = [self.getParticleWithAllGhostsInJail(p, jailedGhosts) for p in self.particles]
         else:
@@ -596,7 +596,10 @@ class JointParticleFilter:
             # now loop through and update each entry in newParticle...
 
             "*** YOUR CODE HERE ***"
-
+            for i in xrange(self.numGhosts):
+                newParticle[i] = util.sample(getPositionDistributionForGhost(
+                    setGhostPositions(gameState, oldParticle), i, self.ghostAgents[i]
+                    ))
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
         self.particles = newParticles
