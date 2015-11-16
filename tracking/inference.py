@@ -337,6 +337,13 @@ class ParticleFilter(InferenceModule):
         util.sample(Counter object) is a helper method to generate a sample from
         a belief distribution.
         """
+        new_particles = []
+        for old_pos in self.particles:
+            new_particles.append(util.sample(self.getPositionDistribution(self.setGhostPosition(gameState, old_pos))))
+        self.particles = new_particles
+        return 
+
+        # old implementation
         allPossible = util.Counter()
 
         for p in self.legalPositions:
@@ -347,6 +354,8 @@ class ParticleFilter(InferenceModule):
         allPossible.normalize()
         for i in range(0,self.numParticles):
                 self.particles.append(util.sample(allPossible))
+
+
 
     def getBeliefDistribution(self):
         """
@@ -433,6 +442,22 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        # tuple, list of legal positions for all ghosts
+        positionTup = (self.legalPositions,)*self.numGhosts
+        # permutation of legal positions
+        legalTuples = list(itertools.product(*positionTup))
+        random.shuffle(legalTuples)
+        
+        n = 0
+        self.particles = []
+        
+        while n < self.numParticles:
+            for pos in legalTuples:
+                self.particles.append(pos)
+                n += 1
+                if n >= self.numParticles:
+                    break
+
 
     def addGhostAgent(self, agent):
         """
@@ -480,6 +505,37 @@ class JointParticleFilter:
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
 
         "*** YOUR CODE HERE ***"
+        # Put eaten ghosts in jail
+        jailedGhosts = [i for i, x in enumerate(noisyDistances) if x == None]
+        self.particles = [self.getParticleWithAllGhostsInJail(p, jailedGhosts) for p in self.particles]
+
+        # Update beliefs
+        beliefs = self.getBeliefDistribution()
+        for locTup in beliefs:
+            for i in xrange(self.numGhosts):
+                if noisyDistances[i] != None:
+                    beliefs[locTup] *= emissionModels[i][util.manhattanDistance(locTup[i], pacmanPosition)]
+        
+        # Resample particles
+        self.particles = []
+        # All the particles disappeared!
+        if beliefs.totalCount() == 0:
+            self.initializeParticles(gameState)
+            # Put all jailed ghosts in jail
+            self.particles = [self.getParticleWithAllGhostsInJail(p, jailedGhosts) for p in self.particles]
+        else:
+            for i in range(0, self.numParticles):
+                self.particles.append(util.sample(beliefs))
+
+    def getParticleWithAllGhostsInJail(self, particle, ghostIndices):
+        """
+        Takes a particle (as a tuple of ghost positions) and returns a particle
+        with the ghostIndex'th ghost in jail for every ghostIndex in ghostIndices.
+        """
+        particle = list(particle)
+        for ghostIndex in ghostIndices:
+            particle[ghostIndex] = self.getJailPosition(ghostIndex)
+        return tuple(particle)
 
     def getParticleWithGhostInJail(self, particle, ghostIndex):
         """
@@ -546,8 +602,18 @@ class JointParticleFilter:
         self.particles = newParticles
 
     def getBeliefDistribution(self):
+        """
+        Return the agent's current belief state, a distribution over tupes of ghost
+        locations conditioned on all evidence and time passage. This method
+        essentially converts a list of particles into a belief distribution (a
+        Counter object)
+        """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        beliefs = util.Counter()
+        for p in self.particles:
+            beliefs[p] += 1
+        beliefs.normalize()
+        return beliefs
 
 # One JointInference module is shared globally across instances of MarginalInference
 jointInference = JointParticleFilter()
